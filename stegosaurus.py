@@ -43,6 +43,8 @@ class Encoder:
     # encrypts data
     @staticmethod
     def encrypt(args):
+        print('Performing encrypt.')
+
         # gather records
         totalinputbytes = 0
         records = []
@@ -57,7 +59,7 @@ class Encoder:
                 records.append(record)
 
                 if args.verbose:
-                    print('>> Analyzing %s : %i total bytes in record.' % (relpath, record.total_byte_size()))
+                    print('\t>> Analyzing %s : %i total bytes in record.' % (relpath, record.total_byte_size()))
 
                 totalinputbytes += record.total_byte_size()
 
@@ -89,7 +91,7 @@ class Encoder:
             response = graph.request('me/photos')
 
             for picture in response['data']:
-                url = picture['picture']
+                url = picture['source']
                 downloadpath = '%s.jpg' % os.path.join(args.source, str(uuid.uuid4()))
 
                 if args.verbose:
@@ -112,10 +114,12 @@ class Encoder:
         absolutebyteindex = 0
         recordindex = 0
         recordbyteindex = 0
-        imagebyteindex = 0
 
         for root, dirs, files in os.walk(args.source):
             for file in files:
+                if absolutebyteindex == totalinputbytes:
+                    return
+
                 if '.jpg' in file or '.jpeg' in file:
                     relpath = os.path.join(root, file)
                     jpg = Image.open(relpath)
@@ -185,19 +189,19 @@ class Encoder:
                         print('\t>>Wrote %s...' % fullkeydestpath)
 
     @staticmethod
-    def decypt(args):
-        pass
+    def decrypt(args):
+        print('Performing decrypt.')
 
 # pngcrypt {encrypt, decrupt} [INPUT DIRECTORY] [OUTPUT DIRECTORY] [SOURCE DIRECTORY] [FACEBOOK TOKEN] (Optional)
 parser = argparse.ArgumentParser(description='Encrpyts input files into images.')
 parser.add_argument('action', choices=['encrypt', 'decrypt'])
 parser.add_argument('input')
 parser.add_argument('output')
-parser.add_argument('source')
-
+parser.add_argument('source', nargs='?')
 # fb token - https://developers.facebook.com/tools/explorer/
 parser.add_argument('token', nargs='?')
 parser.add_argument('--verbose', action='store_true')
+parser.add_argument('--clean', action='store_true')
 
 args = parser.parse_args()
 
@@ -207,9 +211,14 @@ if not os.path.exists(args.input):
     exit()
 
 # clean
-print('Cleaning target directory.')
-shutil.rmtree(args.output, ignore_errors=True)
-os.mkdir(args.output)
+if args.clean:
+    print('Cleaning target directory.')
+    shutil.rmtree(args.output, ignore_errors=True)
+    os.mkdir(args.output)
+
+    if args.action == 'encrypt':
+        print('Cleaning source directory.')
+        shutil.rmtree(args.source, ignore_errors=True)
 
 # perform action
 if args.action == 'encrypt':
