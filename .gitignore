@@ -1,6 +1,4 @@
-input
-source
-testdecrypt
-testout
 .idea
-*.bat
+
+TestInput
+TestOutput
